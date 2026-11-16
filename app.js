@@ -27,8 +27,6 @@ function history(){$('app').innerHTML='<h1>운동 기록</h1><p class="muted">�
 function settings(){$('app').innerHTML='<h1>설정 및 백업</h1><section><p>기록은 현재 기기에만 저장됩니다. 주기적으로 백업하세요.</p><div class="actions"><button onclick="backup()">JSON 백업</button><label class="secondary" style="padding:10px;border-radius:10px;background:#eee">백업 복원 <input type="file" accept=".json,application/json" onchange="restore(this)" style="display:none"></label></div></section>'}
 function backup(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ironlog-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 async function restore(input){try{const v=JSON.parse(await input.files[0].text());if(!Array.isArray(v.routines)||!Array.isArray(v.history))throw Error('형식 오류');if(confirm('현재 기록을 백업 파일로 교체할까요?')){data=v;save();render()}}catch(e){alert('복원 실패: '+e.message)}}
-render();
-
 /* Ironlog 2: discovery and redesigned screens. Existing localStorage data is preserved. */
 const LIB=[['벤치프레스','가슴','바벨'],['인클라인 덤벨프레스','가슴','덤벨'],['체스트프레스','가슴','머신'],['푸시업','가슴','맨몸'],['덤벨 플라이','가슴','덤벨'],['랫풀다운','등','케이블'],['풀업','등','맨몸'],['시티드로우','등','케이블'],['암풀다운','등','케이블'],['바벨로우','등','바벨'],['덤벨 숄더프레스','어깨','덤벨'],['사이드 레터럴 레이즈','어깨','덤벨'],['페이스풀','어깨','케이블'],['바벨스쿼트','하체','바벨'],['레그프레스','하체','머신'],['레그컬','하체','머신'],['레그익스텐션','하체','머신'],['루마니안 데드리프트','하체','바벨'],['런지','하체','덤벨'],['스탠딩 카프레이즈','하체','맨몸'],['덤벨 이두 컬','팔','덤벨'],['덤벨 해머컬','팔','덤벨'],['케이블 삼두 푸시다운','팔','케이블'],['크런치','복근','맨몸'],['플랭크','복근','맨몸'],['월슬라이드','스트레칭','맨몸'],['견갑 푸시업','스트레칭','맨몸']];
 let part='전체',search='',target=null,restUntil=0,restInterval=null;
