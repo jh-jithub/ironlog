@@ -94,4 +94,30 @@ function showGuide(name){$('guide-modal')?.remove();const layer=document.createE
 const originalShowGuide=showGuide;
 showGuide=function(name){originalShowGuide(name);const sheet=$('guide-modal')?.querySelector('.guide-sheet');if(!sheet)return;sheet.querySelector('.motion-wrap')?.remove();const panel=document.createElement('div');panel.className='external-guide';const q=encodeURIComponent(name+' 운동 자세');panel.innerHTML='<p>운동별 실제 시연 영상을 외부 전문 자료에서 확인할 수 있습니다.</p><a target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/results?search_query='+q+'">YouTube 자세 시연 보기 ↗</a><p><a target="_blank" rel="noopener noreferrer" href="https://musclewiki.com/exercises">MuscleWiki 운동 라이브러리 ↗</a></p>';sheet.querySelector('h2')?.after(panel)}
 
+
+/* One workout session can be paused and resumed without double counting. */
+const DRAFT_KEY='ironlog_active_session_v1';
+function persistDraft(){if(active)localStorage.setItem(DRAFT_KEY,JSON.stringify(active))}
+function clearDraft(){localStorage.removeItem(DRAFT_KEY)}
+function pauseWorkout(){if(!active)return;persistDraft();active=null;restUntil=0;tab='today';render()}
+function resumeWorkout(){try{const draft=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');if(!draft||!Array.isArray(draft.exercises))return;active=draft;tab='today';render()}catch{clearDraft()}}
+function discardWorkout(){if(!confirm('진행 중인 운동을 삭제할까요? 임시 저장한 세트도 삭제됩니다.'))return;active=null;clearDraft();restUntil=0;render()}
+const previousStart=start;
+start=function(i){if(localStorage.getItem(DRAFT_KEY)){if(confirm('중단한 운동이 있습니다. 이어서 진행할까요?')){resumeWorkout();return}if(!confirm('기존 임시 운동을 삭제하고 새 운동을 시작할까요?'))return;clearDraft()}previousStart(i);persistDraft()}
+const previousFinish=finish;
+finish=function(){if(!active)return;if(!confirm('운동을 완료하고 기록 1회로 저장할까요?'))return;const finished=active;finished.ended=new Date().toISOString();data.history.push(finished);if(finished.routineId){const idx=data.routines.findIndex(r=>r.id===finished.routineId);if(idx>=0)data.next=(idx+1)%Math.max(1,data.routines.length)}active=null;clearDraft();save();tab='history';render()}
+const previousWorkout=workout;
+workout=function(){previousWorkout();const app=$('app');app.querySelectorAll('.workout-card .exercise-title').forEach((el,i)=>{el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label',active.exercises[i].name+' 운동 자세 보기');el.addEventListener('click',()=>showGuide(active.exercises[i].name));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showGuide(active.exercises[i].name)}})});const actions=app.querySelector('.actions.finish');if(actions){actions.innerHTML='<button class="secondary" onclick="discardWorkout()">운동 취소</button><button class="secondary" onclick="pauseWorkout()">잠시 중단</button><button onclick="finish()">운동 완료</button>'}persistDraft()}
+const previousToday=today;
+today=function(){previousToday();if(!active&&localStorage.getItem(DRAFT_KEY)){const box=document.createElement('section');box.className='resume-session';let draft;try{draft=JSON.parse(localStorage.getItem(DRAFT_KEY))}catch{}box.innerHTML='<h2>중단한 운동</h2><p>'+esc(draft?.name||'운동')+' · 이어서 진행할 수 있습니다.</p><button onclick="resumeWorkout()">이어서 운동하기</button><button class="secondary" onclick="discardSavedDraft()">임시 기록 삭제</button>';$('app').prepend(box)}}
+function discardSavedDraft(){if(confirm('임시 저장한 운동을 삭제할까요?')){clearDraft();render()}}
+const previousSetval=setval;
+setval=function(i,j,k,v){previousSetval(i,j,k,v);persistDraft()}
+const previousToggle=toggle;
+toggle=function(i,j){previousToggle(i,j);persistDraft()}
+const previousAddSet=addSet;
+addSet=function(i){previousAddSet(i);persistDraft()}
+const previousRemoveExercise=removeExercise;
+removeExercise=function(i){previousRemoveExercise(i);persistDraft()}
+
 render();
